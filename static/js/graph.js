@@ -57,6 +57,8 @@ function addEdge(i, j, v) {
         fontSize: 30,
         left: (startX + endX) / 2,
         top: (startY + endY) / 2,
+        selectable: false,
+        hoverCursor: "cursor"
     });
     canvas.add(label);
     graph[i].push(j);

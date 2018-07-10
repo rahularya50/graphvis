@@ -1,16 +1,19 @@
 # coding=utf-8
-grammar = '''
+
+GRAMMAR = '''
 GOAL = STATEMENTS
-STATEMENTS = [SPACED_STATEMENT]
-SPACED_STATEMENT =  STATEMENT 
+STATEMENTS = [STATEMENT]
 STATEMENT = HINT | LOOP | TOKEN
-TOKEN = EXPRESSION | "<" EXPRESSION_LIST ">"
+TOKEN = VALUE | "<" EXPRESSION_LIST ">"
 EXPRESSION_LIST = [EXPRESSION, ","]
 HINT = "(" EXPRESSION "=" EXPRESSION ")" | "(" EXPRESSION_LIST ")"
 LOOP = "forall" EXPRESSION "{" STATEMENTS "}"
-EXPRESSION = VALUE OPERATOR EXPRESSION | "(" EXPRESSION ")" OPERATOR EXPRESSION | "(" EXPRESSION ")" | VALUE
-@OPERATOR = "+"|"-"|"*"|"/"
-VALUE = KEYWORD|<WORD>
+EXPRESSION = SECOND_EXPRESSION FIRST_OPERATOR EXPRESSION | SECOND_EXPRESSION
+SECOND_EXPRESSION = SINGLETON SECOND_OPERATOR SECOND_EXPRESSION | SINGLETON
+SINGLETON = "(" EXPRESSION ")" | VALUE
+@FIRST_OPERATOR = "+"|"-"
+@SECOND_OPERATOR = "*"|"/"
+VALUE = <WORD>
 @KEYWORD = "VERTICES"|"EDGES"
 '''
 
@@ -79,9 +82,12 @@ class ParseNode:
         if self.value:
             return " " * indent + self.type + ": " + self.value
         out = " " * indent + self.type + ": [\n"
+        next_indent = indent + 1
+        if len(self.children) > 1:
+            next_indent += 2
         for x in self.children:
             if type(x) is ParseNode:
-                out += x.__repr__(indent + 1)
+                out += x.__repr__(next_indent)
             else:
                 out += str(x)
             out += ", \n"
@@ -227,18 +233,7 @@ def match(goal, S, grammar, i=0):
     return None
 
 
-def main():
-    proc_grammar = build_proc_grammar(grammar)
-    print("\n".join(str(x) for x in proc_grammar.items()))
-    print(match("GOAL", '''
-    <cities, VERTICES> plans
-    (EDGES = cities - 1)
-    forall EDGES {
-        <a, ENDPOINT+1> <b, ENDPOINT+1> <length, DATA> (DATA = a - 1) (DATA = b - 1)
-    }
-    forall plans {
-        u v
-    }
-    ''', proc_grammar))
-
-main()
+def parse(S, proc_grammar=None):
+    if proc_grammar is None:
+        proc_grammar = build_proc_grammar(GRAMMAR)
+    return match("GOAL", S, proc_grammar)[0]
