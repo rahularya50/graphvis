@@ -33,11 +33,11 @@ class Token:
 class MathExpression:
     def __init__(self, lhs, op, rhs):
         self.lhs = lhs
-        self.op = op
+        self.operator = op
         self.rhs = rhs
 
     def __repr__(self):
-        return "(" + str(self.lhs) + " " + str(self.op) + " " + str(self.rhs) + ")"
+        return "(" + str(self.lhs) + " " + str(self.operator) + " " + str(self.rhs) + ")"
 
 
 class Variable:
@@ -62,6 +62,42 @@ class Operator:
 
     def __repr__(self):
         return self.operator
+
+    def execute(self, lhs, rhs):
+        if self.operator == "*":
+            return lhs * rhs
+        elif self.operator == "/":
+            return lhs // rhs
+        elif self.operator == "+":
+            return lhs + rhs
+        elif self.operator == "-":
+            return lhs - rhs
+        else:
+            raise Exception("Unknown operator :(", self.operator)
+
+    def get_rhs(self, lhs, result):
+        if self.operator == "*":
+            return result / lhs
+        elif self.operator == "/":
+            return lhs // result
+        elif self.operator == "+":
+            return result - lhs
+        elif self.operator == "-":
+            return lhs - result
+        else:
+            raise Exception("Unknown operator :(", self.operator)
+
+    def get_lhs(self, rhs, result):
+        if self.operator == "*":
+            return result / rhs
+        elif self.operator == "/":
+            return result * rhs
+        elif self.operator == "+":
+            return result - rhs
+        elif self.operator == "-":
+            return result + rhs
+        else:
+            raise Exception("Unknown operator :(", self.operator)
 
 
 def compile_ast(ast):

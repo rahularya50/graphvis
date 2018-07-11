@@ -7,7 +7,7 @@ STATEMENT = HINT | LOOP | TOKEN
 TOKEN = VALUE | "<" EXPRESSION_LIST ">"
 EXPRESSION_LIST = [EXPRESSION, ","]
 HINT = "(" EXPRESSION "=" EXPRESSION ")" | "(" EXPRESSION_LIST ")"
-LOOP = "forall" EXPRESSION "{" STATEMENTS "}"
+LOOP = "forall" VALUE "{" STATEMENTS "}"
 EXPRESSION = SECOND_EXPRESSION FIRST_OPERATOR EXPRESSION | SECOND_EXPRESSION
 SECOND_EXPRESSION = SINGLETON SECOND_OPERATOR SECOND_EXPRESSION | SINGLETON
 SINGLETON = "(" EXPRESSION ")" | VALUE
@@ -202,17 +202,17 @@ def match(goal, S, grammar, i=0):
         out = ParseNode(goal)
         fail = False
         for element in possibility.elements:
-            if type(element) is Literal:
+            if isinstance(element, Literal):
                 if S[pos:pos+len(element.value)] != element.value:
                     fail = True
                     break
                 pos += len(element.value)
                 if grammar[goal].hold_literals:
                     out.addChild(ParseNode("LITERAL", element.value))
-            elif type(element) is WhiteSpace:
+            elif isinstance(element, WhiteSpace):
                 while pos != len(S) and S[pos].isspace():
                     pos += 1
-            elif type(element) is Value:
+            elif isinstance(element, Value):
                 curr = ""
                 while pos != len(S) and S[pos].isalnum():
                     curr += S[pos]
