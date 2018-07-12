@@ -30,6 +30,14 @@ class Token:
         return "<" + ", ".join(str(x) for x in self.expression_list) + "> "
 
 
+class Initializer:
+    def __init__(self, name):
+        self.name = name
+
+    def __repr__(self):
+        return str(self.name)
+
+
 class MathExpression:
     def __init__(self, lhs, op, rhs):
         self.lhs = lhs
@@ -109,12 +117,15 @@ def compile_statement_list(statement_list):
     out = []
     for statement in statement_list.children:
         out.append(compile_statement(statement))
+    print(out)
     return out
 
 
 def compile_statement(statement):
     obj = statement.children[0]
-    if obj.type == "HINT":
+    if obj.type == "INITIALIZER":
+        return Initializer(obj.children[0].value)
+    elif obj.type == "HINT":
         if obj.children[0].type == "EXPRESSION_LIST":
             return Hint(compile_expression(exp) for exp in obj.children[0].children)
         else:

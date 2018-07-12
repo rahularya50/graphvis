@@ -32,6 +32,12 @@ def execute(ast, S):
 
 def run_commands(commands, S, i, values, loopcnts, root):
     for command in commands:
+        if isinstance(command, compile.Initializer):
+            if command.name == "newgraph":
+                ...
+            else:
+                raise Exception("Unknown initializer!", command.name)
+
         if isinstance(command, compile.Token):
             T = ""
             while i != len(S) and not S[i].isspace():
@@ -141,6 +147,7 @@ def assign_expression(expression, curr_val, values, loopcnts, root):
 
 execute(compile.compile_tree(parse.parse('''
 A
+newgraph
 forall A {
     N
 }
