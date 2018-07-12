@@ -1,14 +1,18 @@
 # coding=utf-8
 
 import compile
+import parse
 
 
 class Variable:
     def __init__(self, name, ancestors):
         self.ancestors = ancestors
-        self.children = []
+        self.children = set()
         self.values = {}
         self.name = name
+
+    def __repr__(self):
+        return self.name + ": " + str(self.values)
 
 
 class Root:
@@ -16,13 +20,17 @@ class Root:
         self.children = set()
         self.values = dict()
 
+    def __repr__(self):
+        return str(self.values)
+
 
 def execute(ast, S):
     root = Root()
-    run_commands(ast, S, 0, set(), dict(), root)
+    run_commands(ast, S.strip(), 0, dict(), {}, root)
+    print(root)
 
 
-def run_commands(commands, S, i, actives, values, root):
+def run_commands(commands, S, i, values, loopcnts, root):
     for command in commands:
         if isinstance(command, compile.Token):
             T = ""
@@ -32,7 +40,7 @@ def run_commands(commands, S, i, actives, values, root):
             while i != len(S) and S[i].isspace():
                 i += 1
             for expression in command.expression_list:
-                assign_expression(expression, T, actives, values, root)
+                assign_expression(expression, T, values, loopcnts, root)
 
         elif type(command) is compile.Hint:
             T = None
@@ -44,17 +52,37 @@ def run_commands(commands, S, i, actives, values, root):
                 raise Exception("Value hint is indeterminate!")
             for expression in command.expression_list:
                 if get_value(expression, values) is None:
-                    assign_expression(expression, T, actives, values)
+                    assign_expression(expression, T, loopcnts, values, root)
 
         elif type(command) is compile.Loop:
-            cnt = values[command.loopvar]
-            if command.loopvar in actives:
+            loopvar = command.loopvar.name
+            cnt = values[loopvar]
+            if loopvar in loopcnts:
                 raise Exception("Loop variable already defined!", command.loopvar)
-            actives.add(command.loopvar)
-            # TODO: Add reaectivated variables to *actives*!
-            for i in range(cnt):
-                i = run_commands(command.commands, S, i, actives, values, root)
-            actives.remove(command.loopvar)
+            loopcnts[loopvar] = 0
+            for _ in range(int(cnt)):
+                for child_name in root.values[loopvar].children:
+                    ok = True
+                    child = root.values[child_name]
+                    for ancestor in child.ancestors:
+                        if ancestor not in loopcnts:
+                            ok = False
+                            break
+                    if ok:
+                        key = tuple()
+                        for ancestor in child.ancestors:
+                            key = key + (loopcnts[ancestor],)
+                        if key in child.values:
+                            values[child_name] = child.values[key]
+                i = run_commands(command.statements, S, i, values, loopcnts, root)
+                loopcnts[loopvar] += 1
+                to_remove = []
+                for value in values:
+                    if loopvar in root.values[value].ancestors:
+                        to_remove.append(value)
+                for value in to_remove:
+                    del values[value]
+            del loopcnts[loopvar]
         else:
             raise Exception("Command type unknown!", type(command))
 
@@ -79,7 +107,7 @@ def get_value(expression, values):
         raise Exception("Expression type unknown!")
 
 
-def assign_expression(expression, curr_val, actives, values, root):
+def assign_expression(expression, curr_val, values, loopcnts, root):
     if isinstance(expression, compile.Constant):
         raise Exception("Unable to assign to constant!")
     elif isinstance(expression, compile.Variable):
@@ -87,14 +115,13 @@ def assign_expression(expression, curr_val, actives, values, root):
         if name in values:
             raise Exception("Variable name already defined!", name)
         if name not in root.values:
-            root.values[name] = Variable(name, sorted(actives))
-        prev = root.values
-        curr = root.values[name]
-        for active in actives:
-            if active not in curr:
-                prev, curr = curr, curr[values[active]]
-            curr = curr[values[active]]
-        prev[values[actives[-1]]] = curr_val
+            root.values[name] = Variable(name, sorted(loopcnts))
+        key = tuple()
+        for loopvar in sorted(loopcnts):
+            root.values[loopvar].children.add(name)
+            key = key + (loopcnts[loopvar],)
+        root.values[name].values[key] = curr_val
+        values[name] = curr_val
 
     elif isinstance(expression, compile.MathExpression):
         a = get_value(expression.lhs, values)
@@ -104,7 +131,28 @@ def assign_expression(expression, curr_val, actives, values, root):
         elif a is not None and b is not None:
             raise Exception("Expression already fully defined!")
         else:
-            if a is None:
-                assign_expression(expression.rhs, expression.operator.get_rhs(a, curr_val), actives, values, root)
+            if b is None:
+                assign_expression(expression.rhs, expression.operator.get_rhs(int(a), int(curr_val)), values, loopcnts,
+                                  root)
             else:
-                assign_expression(expression.lhs, expression.operator.get_lhs(b, curr_val), actives, values, root)
+                assign_expression(expression.lhs, expression.operator.get_lhs(int(b), int(curr_val)), values, loopcnts,
+                                  root)
+
+
+execute(compile.compile_tree(parse.parse('''
+A
+forall A {
+    N
+}
+forall A {
+    forall N {
+        M
+    }
+}
+''')), '''
+3
+2 3 4
+1 2
+3 4 5
+6 7 8 9
+''')

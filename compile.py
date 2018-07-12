@@ -77,7 +77,7 @@ class Operator:
 
     def get_rhs(self, lhs, result):
         if self.operator == "*":
-            return result / lhs
+            return result // lhs
         elif self.operator == "/":
             return lhs // result
         elif self.operator == "+":
@@ -89,7 +89,7 @@ class Operator:
 
     def get_lhs(self, rhs, result):
         if self.operator == "*":
-            return result / rhs
+            return result // rhs
         elif self.operator == "/":
             return result * rhs
         elif self.operator == "+":
@@ -100,8 +100,8 @@ class Operator:
             raise Exception("Unknown operator :(", self.operator)
 
 
-def compile_ast(ast):
-    statements = ast.children[0]
+def compile_tree(parse_tree):
+    statements = parse_tree.children[0]
     return compile_statement_list(statements)
 
 
