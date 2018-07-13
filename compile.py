@@ -56,6 +56,14 @@ class Variable:
         return self.name
 
 
+class Keyword:
+    def __init__(self, name):
+        self.name = name
+
+    def __repr__(self):
+        return self.name
+
+
 class Constant:
     def __init__(self, value):
         self.value = value
@@ -117,7 +125,6 @@ def compile_statement_list(statement_list):
     out = []
     for statement in statement_list.children:
         out.append(compile_statement(statement))
-    print(out)
     return out
 
 
@@ -142,7 +149,9 @@ def compile_statement(statement):
 
 
 def compile_expression(expression):
-    if expression.type == "<WORD>":
+    if expression.type == "KEYWORD":
+        return Keyword(expression.children[0].value)
+    elif expression.type == "<WORD>":
         if expression.value.isnumeric():
             return Constant(int(expression.value))
         else:
