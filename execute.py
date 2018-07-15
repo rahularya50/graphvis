@@ -3,6 +3,10 @@
 import compile
 import parse
 
+GRAPH_NAME = "newgraph"
+VERTEX_COUNT = "VERTICES"
+EDGE_COUNT = "EDGES"
+
 
 class Variable:
     def __init__(self, name, ancestors):
@@ -20,17 +24,47 @@ class Graph:
         self.directed = False
         self.vertices = []
         self.edges = []
+        self.nextEdge = None
+
+    def add_endpoint(self, endpoint, loopcnts):
+        if self.nextEdge is None:
+            self.nextEdge = Edge(endpoint, None, loopcnts)
+        else:
+            self.nextEdge.b = endpoint
+            self.edges.append(self.nextEdge)
+            self.nextEdge = None
+
+    def add_vertex(self, vertex, loopcnts):
+        self.vertices.append(Vertex(vertex, loopcnts))
+
+    def set_vertices(self, vertices, loopcnts):
+        if self.vertices:
+            raise Exception("Vertices have already been added")
+        for i in range(vertices):
+            self.vertices.append(Vertex(i, loopcnts))
+            self.vertices[-1].dependencies[VERTEX_COUNT] = i
+
+    def __repr__(self):
+        return "Vertices = " + str(self.vertices) + ", Edges = " + str(self.edges)
 
 
 class Vertex:
-    def __init__(self, index):
+    def __init__(self, index, loopcnts):
         self.id = index
+        self.dependencies = loopcnts.copy()
+
+    def __repr__(self):
+        return str(self.id)
 
 
 class Edge:
-    def __init__(self, a, b):
+    def __init__(self, a, b, loopcnts):
         self.a = a
         self.b = b
+        self.dependencies = loopcnts.copy()
+
+    def __repr__(self):
+        return "(" + str(self.a) + ", " + str(self.b) + ")"
 
 
 class Root:
@@ -39,7 +73,7 @@ class Root:
         self.values = dict()
 
     def __repr__(self):
-        return str(self.values)
+        return "\n".join(str(self.values[x]) for x in self.values)
 
 
 class Main:
@@ -53,16 +87,18 @@ class Main:
         self.run_commands(ast)
         print(self.root)
 
+    def get_data(self):
+        return self.root
+
     def run_commands(self, commands):
         for command in commands:
             if isinstance(command, compile.Initializer):
-                if command.name == "newgraph":
-                    if "newgraph" in self.values:
+                if command.type == "newgraph":
+                    if GRAPH_NAME in self.values:
                         raise Exception("Attempting to initialize graph when one already exists!")
-                    self.store("newgraph", Graph())
-
+                    self.store(GRAPH_NAME, Graph())
                 else:
-                    raise Exception("Unknown initializer!", command.name)
+                    raise Exception("Unknown initializer!", command.type)
 
             elif isinstance(command, compile.Token):
                 T = ""
@@ -74,7 +110,7 @@ class Main:
                 for expression in command.expression_list:
                     self.assign_expression(expression, T)
 
-            elif type(command) is compile.Hint:
+            elif isinstance(command, compile.Hint):
                 T = None
                 for expression in command.expression_list:
                     if self.get_value(expression) is not None:
@@ -86,7 +122,7 @@ class Main:
                     if self.get_value(expression) is None:
                         self.assign_expression(expression, T)
 
-            elif type(command) is compile.Loop:
+            elif isinstance(command, compile.Loop):
                 loopvar = command.loopvar.name
                 cnt = self.values[loopvar]
                 if loopvar in self.loopcnts:
@@ -132,6 +168,9 @@ class Main:
             if a is None or b is None:
                 return None
             return expression.operator.execute(int(a), int(b))
+        elif isinstance(expression, compile.Keyword):
+            return None
+        #            raise Exception("Unable to access value of keyword, please provide quantity with a unique identifier.")
         else:
             raise Exception("Expression type unknown!", type(expression), expression)
 
@@ -156,6 +195,26 @@ class Main:
                 else:
                     self.assign_expression(expression.lhs, expression.operator.get_lhs(int(b), int(curr_val)))
 
+        elif isinstance(expression, compile.Keyword):
+            # decode keyword, access + store in graph!
+            if expression.name == "ENDPOINT":
+                if GRAPH_NAME not in self.values:
+                    raise Exception("Graph not yet initialized!")
+                self.values[GRAPH_NAME].add_endpoint(curr_val, self.loopcnts)
+            elif expression.name == "VERTEX":
+                if GRAPH_NAME not in self.values:
+                    raise Exception("Graph not yet initialized!")
+                self.values[GRAPH_NAME].add_vertex(curr_val, self.loopcnts)
+            elif expression.name == "VERTICES":
+                if GRAPH_NAME not in self.values:
+                    raise Exception("Graph not yet initialized!")
+                self.values[GRAPH_NAME].set_vertices(int(curr_val), self.loopcnts)
+            elif expression.name == "HEAD":
+                raise Exception("Directed graphs not yet supported!")
+            elif expression.name == "TAIL":
+                raise Exception("Directed graphs not yet supported!")
+            else:
+                raise Exception("Keyword type unknown!")
         else:
             raise Exception("Expression type unknown!", expression, type(expression))
 
@@ -172,19 +231,31 @@ class Main:
         self.values[name] = value
 
 
-Main(compile.compile_tree(parse.parse('''
+print(Main(compile.compile_tree(parse.parse('''
 T
 forall T {
     newgraph
     edges
+    VERTICES
+}
+forall T {
     forall edges {
-        <a, ENDPOINT> <b, ENDPOINT>
+        <a, ENDPOINT+1> <b, ENDPOINT+1>
     }
 }
 ''')), '''
-1
+2
 3
+6
+4
+14
+
 1 2
 3 4
 5 6
-''')
+
+7 8
+9 10
+11 12
+13 14
+''').get_data().values["newgraph"])

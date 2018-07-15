@@ -31,11 +31,12 @@ class Token:
 
 
 class Initializer:
-    def __init__(self, name):
+    def __init__(self, type, name=""):
+        self.type = type
         self.name = name
 
     def __repr__(self):
-        return str(self.name)
+        return str(self.type) + "(" + str(self.name) + ")"
 
 
 class MathExpression:
@@ -125,6 +126,7 @@ def compile_statement_list(statement_list):
     out = []
     for statement in statement_list.children:
         out.append(compile_statement(statement))
+    print(out)
     return out
 
 
