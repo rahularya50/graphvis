@@ -81,3 +81,17 @@ function redrawEdges(i) {
         edges[i][x][1].setCoords();
     }
 }
+
+function draw_graph(g) {
+    canvas.clear();
+    nodes = [];
+    edges = [];
+    graph = [];
+    console.log(g);
+    for (let vertex of g["vertices"]) {
+        addNode(vertex["name"]);
+    }
+    for (let edge of g["edges"]) {
+        addEdge(edge["head"], edge["tail"], "")
+    }
+}

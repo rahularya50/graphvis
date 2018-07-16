@@ -1,7 +1,7 @@
 # coding=utf-8
 from __future__ import annotations
 
-from typing import List, Dict, NewType, Union, Optional
+from typing import List, Dict, NewType, Union, Optional, Tuple
 
 import compile
 
@@ -11,6 +11,8 @@ EDGE_COUNT = "EDGES"
 
 
 class Variable:
+    values: Dict[Tuple[int], VarVal]
+
     def __init__(self, name: compile.VarName, ancestors: List[compile.VarName]) -> None:
         self.ancestors = ancestors
         self.children = set()
@@ -22,6 +24,9 @@ class Variable:
 
 
 class Graph:
+    edges: List[Edge]
+    vertices: List[Vertex]
+
     def __init__(self) -> None:
         self.directed = False
         self.vertices = []
@@ -70,6 +75,8 @@ class Edge:
 
 
 class Root:
+    values: Dict[compile.VarName, Variable]
+
     def __init__(self) -> None:
         self.children = set()
         self.values = dict()
@@ -154,7 +161,7 @@ class Execute:
             else:
                 raise Exception("Statement type unknown!", type(command))
 
-    def get_value(self, expression: compile.Expression) -> Union(int, None):
+    def get_value(self, expression: compile.Expression) -> Union[VarVal, None]:
         if isinstance(expression, compile.Constant):
             return expression.value
         elif isinstance(expression, compile.Variable):
@@ -173,7 +180,7 @@ class Execute:
         else:
             raise Exception("Expression type unknown!", type(expression), expression)
 
-    def assign_expression(self, expression: compile.Expression, curr_val: int) -> None:
+    def assign_expression(self, expression: compile.Expression, curr_val: VarVal) -> None:
         # print("Assigning", curr_val, "to", expression, "under loops", self.loopcnts)
         if isinstance(expression, compile.Constant):
             raise Exception("Unable to assign to constant!")
@@ -199,11 +206,11 @@ class Execute:
             if expression.name == "ENDPOINT":
                 if GRAPH_NAME not in self.values:
                     raise Exception("Graph not yet initialized!")
-                self.values[GRAPH_NAME].add_endpoint(curr_val, self.loopcnts)
+                self.values[GRAPH_NAME].add_endpoint(str(curr_val), self.loopcnts)
             elif expression.name == "VERTEX":
                 if GRAPH_NAME not in self.values:
                     raise Exception("Graph not yet initialized!")
-                self.values[GRAPH_NAME].add_vertex(curr_val, self.loopcnts)
+                self.values[GRAPH_NAME].add_vertex(str(curr_val), self.loopcnts)
             elif expression.name == "VERTICES":
                 if GRAPH_NAME not in self.values:
                     raise Exception("Graph not yet initialized!")
@@ -232,4 +239,4 @@ class Execute:
 
 LoopCounts = NewType("LoopCounts", Dict[compile.VarName, int])
 VertexName = NewType("VertexName", str)
-VarVal = NewType("VarVal", Union[int, Graph])
+VarVal = Union[int, str, Graph]

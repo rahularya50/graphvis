@@ -123,7 +123,7 @@ class Operator:
 
 
 Statement = Union[Initializer, Loop, Hint, Token]
-Expression = NewType("Expression", Union[Keyword, MathExpression, Variable, Constant])
+Expression = Union[Keyword, MathExpression, Variable, Constant]
 VarName = NewType("VarName", str)
 ObjType = NewType("ObjType", str)
 

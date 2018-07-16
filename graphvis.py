@@ -20,9 +20,8 @@ def graph_test():
 def process_graph():
     S = request.form.get("graphdata")
     fmt = request.form.get("graphformat")
-    graph = endpoint.get_graph(fmt, S)
-    print(graph)
-    return str(graph)
+    data = endpoint.get_data(fmt, S)
+    return data
 
 
 if __name__ == '__main__':
