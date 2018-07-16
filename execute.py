@@ -1,7 +1,9 @@
 # coding=utf-8
+from __future__ import annotations
+
+from typing import List, Dict, NewType, Union, Optional
 
 import compile
-import parse
 
 GRAPH_NAME = "newgraph"
 VERTEX_COUNT = "VERTICES"
@@ -9,24 +11,24 @@ EDGE_COUNT = "EDGES"
 
 
 class Variable:
-    def __init__(self, name, ancestors):
+    def __init__(self, name: compile.VarName, ancestors: List[compile.VarName]) -> None:
         self.ancestors = ancestors
         self.children = set()
         self.values = {}
         self.name = name
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return self.name + ": " + str(self.values)
 
 
 class Graph:
-    def __init__(self):
+    def __init__(self) -> None:
         self.directed = False
         self.vertices = []
         self.edges = []
         self.nextEdge = None
 
-    def add_endpoint(self, endpoint, loopcnts):
+    def add_endpoint(self, endpoint: VertexName, loopcnts: LoopCounts) -> None:
         if self.nextEdge is None:
             self.nextEdge = Edge(endpoint, None, loopcnts)
         else:
@@ -34,69 +36,67 @@ class Graph:
             self.edges.append(self.nextEdge)
             self.nextEdge = None
 
-    def add_vertex(self, vertex, loopcnts):
+    def add_vertex(self, vertex: VertexName, loopcnts: LoopCounts) -> None:
         self.vertices.append(Vertex(vertex, loopcnts))
 
-    def set_vertices(self, vertices, loopcnts):
+    def set_vertices(self, vertices: int, loopcnts: LoopCounts) -> None:
         if self.vertices:
             raise Exception("Vertices have already been added")
         for i in range(vertices):
-            self.vertices.append(Vertex(i, loopcnts))
+            self.vertices.append(Vertex(VertexName(str(i)), loopcnts))
             self.vertices[-1].dependencies[VERTEX_COUNT] = i
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "Vertices = " + str(self.vertices) + ", Edges = " + str(self.edges)
 
 
 class Vertex:
-    def __init__(self, index, loopcnts):
+    def __init__(self, index: VertexName, loopcnts: LoopCounts) -> None:
         self.id = index
         self.dependencies = loopcnts.copy()
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return str(self.id)
 
 
 class Edge:
-    def __init__(self, a, b, loopcnts):
+    def __init__(self, a: VertexName, b: Optional[VertexName], loopcnts: LoopCounts) -> None:
         self.a = a
         self.b = b
         self.dependencies = loopcnts.copy()
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "(" + str(self.a) + ", " + str(self.b) + ")"
 
 
 class Root:
-    def __init__(self):
+    def __init__(self) -> None:
         self.children = set()
         self.values = dict()
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "\n".join(str(self.values[x]) for x in self.values)
 
 
-class Main:
-    def __init__(self, ast, S):
+class Execute:
+    def __init__(self, ast: List[compile.Statement], S: str) -> None:
         self.values = {}
         self.loopcnts = {}
         self.root = Root()
         self.S = S.strip()
         self.i = 0
-        print(ast)
         self.run_commands(ast)
-        print(self.root)
 
-    def get_data(self):
+    def get_data(self) -> Root:
         return self.root
 
-    def run_commands(self, commands):
+    def run_commands(self, commands: List[compile.Statement]) -> None:
         for command in commands:
             if isinstance(command, compile.Initializer):
                 if command.type == "newgraph":
                     if GRAPH_NAME in self.values:
                         raise Exception("Attempting to initialize graph when one already exists!")
-                    self.store(GRAPH_NAME, Graph())
+                    self.store(compile.VarName(GRAPH_NAME), Graph())
                 else:
                     raise Exception("Unknown initializer!", command.type)
 
@@ -152,9 +152,9 @@ class Main:
                         del self.values[value]
                 del self.loopcnts[loopvar]
             else:
-                raise Exception("Command type unknown!", type(command))
+                raise Exception("Statement type unknown!", type(command))
 
-    def get_value(self, expression):
+    def get_value(self, expression: compile.Expression) -> Union(int, None):
         if isinstance(expression, compile.Constant):
             return expression.value
         elif isinstance(expression, compile.Variable):
@@ -170,12 +170,11 @@ class Main:
             return expression.operator.execute(int(a), int(b))
         elif isinstance(expression, compile.Keyword):
             return None
-        #            raise Exception("Unable to access value of keyword, please provide quantity with a unique identifier.")
         else:
             raise Exception("Expression type unknown!", type(expression), expression)
 
-    def assign_expression(self, expression, curr_val):
-        print("Assigning", curr_val, "to", expression, "under loops", self.loopcnts)
+    def assign_expression(self, expression: compile.Expression, curr_val: int) -> None:
+        # print("Assigning", curr_val, "to", expression, "under loops", self.loopcnts)
         if isinstance(expression, compile.Constant):
             raise Exception("Unable to assign to constant!")
 
@@ -218,7 +217,7 @@ class Main:
         else:
             raise Exception("Expression type unknown!", expression, type(expression))
 
-    def store(self, name, value):
+    def store(self, name: compile.VarName, value: VarVal) -> None:
         if name in self.values:
             raise Exception("Variable name already defined!", name)
         if name not in self.root.values:
@@ -231,31 +230,6 @@ class Main:
         self.values[name] = value
 
 
-print(Main(compile.compile_tree(parse.parse('''
-T
-forall T {
-    newgraph
-    edges
-    VERTICES
-}
-forall T {
-    forall edges {
-        <a, ENDPOINT+1> <b, ENDPOINT+1>
-    }
-}
-''')), '''
-2
-3
-6
-4
-14
-
-1 2
-3 4
-5 6
-
-7 8
-9 10
-11 12
-13 14
-''').get_data().values["newgraph"])
+LoopCounts = NewType("LoopCounts", Dict[compile.VarName, int])
+VertexName = NewType("VertexName", str)
+VarVal = NewType("VarVal", Union[int, Graph])

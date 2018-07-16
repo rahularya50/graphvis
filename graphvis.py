@@ -1,6 +1,8 @@
 # coding=utf-8
 from flask import Flask, send_from_directory, request
 
+import endpoint
+
 app = Flask(__name__)
 
 
@@ -16,7 +18,12 @@ def graph_test():
 
 @app.route("/process_graph", methods=["POST"])
 def process_graph():
-    data = request.form.get("graphdata")
+    S = request.form.get("graphdata")
+    fmt = request.form.get("graphformat")
+    graph = endpoint.get_graph(fmt, S)
+    print(graph)
+    return str(graph)
+
 
 if __name__ == '__main__':
     app.run(debug=True)

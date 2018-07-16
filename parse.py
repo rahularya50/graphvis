@@ -1,4 +1,7 @@
 # coding=utf-8
+from __future__ import annotations
+
+from typing import List, Dict, Union, Optional, NewType, Tuple
 
 GRAMMAR = '''
 GOAL = STATEMENTS
@@ -20,40 +23,40 @@ VALUE = KEYWORD | <WORD>
 
 
 class WhiteSpace:
-    def __init__(self):
+    def __init__(self) -> None:
         pass
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "whitespace"
 
 
 class OneOf:
-    def __init__(self, *possibilities, hold_literals):
+    def __init__(self, possibilities: List[AllOf], hold_literals: bool) -> None:
         self.possibilities = possibilities
         self.hold_literals = hold_literals
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "OneOf(" + ", ".join(str(x) for x in self.possibilities) + ")"
 
 
 class AllOf:
-    def __init__(self, *elements):
+    def __init__(self, elements: List[NodeType]) -> None:
         self.elements = elements
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "AllOf(" + ", ".join(str(x) for x in self.elements) + ")"
 
 
 class Value:
-    def __init__(self):
+    def __init__(self) -> None:
         pass
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "value"
 
 
 class Array:
-    def __init__(self, element, delim=None, hold_literals=False):
+    def __init__(self, element: str, delim: str = None, hold_literals: bool = False) -> None:
         self.element = element
         self.delim = delim
         self.hold_literals = hold_literals
@@ -63,23 +66,23 @@ class Array:
 
 
 class Literal:
-    def __init__(self, value):
+    def __init__(self, value: str) -> None:
         self.value = value
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "Literal(" + str(self.value) + ")"
 
 
 class ParseNode:
-    def __init__(self, type, value=None):
+    def __init__(self, type: NodeType, value: str = None) -> None:
         self.type = type
         self.value = value
         self.children = []
 
-    def addChild(self, node):
+    def add_child(self, node: "ParseNode") -> None:
         self.children.append(node)
 
-    def __repr__(self, indent=0):
+    def __repr__(self, indent: int = 0) -> str:
         if self.value:
             return " " * indent + self.type + ": " + self.value
         out = " " * indent + self.type + ": [\n"
@@ -96,7 +99,13 @@ class ParseNode:
         return out
 
 
-def build_proc_grammar(raw_grammar):
+NodeType = NewType("NodeType", str)
+Target = NewType("Target", Union[Array, OneOf])
+Grammar = NewType("Grammar", Dict[NodeType, Target])
+IsMatch = NewType("IsMatch", Optional[Tuple[ParseNode, int]])
+
+
+def build_proc_grammar(raw_grammar: str) -> Grammar:
     proc_grammar = {}
     lines = raw_grammar.split("\n")
 
@@ -120,7 +129,7 @@ def build_proc_grammar(raw_grammar):
         else:
             possibilities = []
             curr_possibility = []
-            curr_elem = ""
+            curr_elem = NodeType("")
             in_literal = False
             in_special = False
             for x in seq:
@@ -158,7 +167,7 @@ def build_proc_grammar(raw_grammar):
                     if curr_elem:
                         curr_possibility.append(curr_elem)
                     if curr_possibility:
-                        possibilities.append(AllOf(*curr_possibility))
+                        possibilities.append(AllOf(curr_possibility))
                     curr_possibility = []
                     curr_elem = ""
                 else:
@@ -166,16 +175,16 @@ def build_proc_grammar(raw_grammar):
             if curr_elem:
                 curr_possibility.append(curr_elem)
             if curr_possibility:
-                possibilities.append(AllOf(*curr_possibility))
-            proc_grammar[exp] = OneOf(*possibilities, hold_literals=hold_literals)
-    return proc_grammar
+                possibilities.append(AllOf(curr_possibility))
+            proc_grammar[NodeType(exp)] = OneOf(possibilities, hold_literals=hold_literals)
+    return Grammar(proc_grammar)
 
 
-def build_parse_tree(S, proc_grammar):
-    return match("GOAL", S, proc_grammar)
+def build_parse_tree(S: str, proc_grammar: Grammar) -> IsMatch:
+    return match(NodeType("GOAL"), S, proc_grammar)
 
 
-def match_array(goal, S, grammar, i):
+def match_array(goal: NodeType, S: str, grammar: Grammar, i: int) -> IsMatch:
     element = grammar[goal].element
     delim = grammar[goal].delim
     if not match(element, S, grammar, i):
@@ -185,7 +194,7 @@ def match_array(goal, S, grammar, i):
         x = match(element, S, grammar, i)
         if not x:
             return out, i
-        out.addChild(x[0])
+        out.add_child(x[0])
         i = x[1]
         if delim:
             if S[i:i+len(delim)] != delim:
@@ -195,7 +204,7 @@ def match_array(goal, S, grammar, i):
             i += 1
 
 
-def match(goal, S, grammar, i=0):
+def match(goal: NodeType, S: str, grammar: Grammar, i: int = 0) -> IsMatch:
     if type(grammar[goal]) is Array:
         return match_array(goal, S, grammar, i)
     for possibility in grammar[goal].possibilities:
@@ -209,7 +218,7 @@ def match(goal, S, grammar, i=0):
                     break
                 pos += len(element.value)
                 if grammar[goal].hold_literals:
-                    out.addChild(ParseNode("LITERAL", element.value))
+                    out.add_child(ParseNode(NodeType("LITERAL"), element.value))
             elif isinstance(element, WhiteSpace):
                 while pos != len(S) and S[pos].isspace():
                     pos += 1
@@ -221,20 +230,20 @@ def match(goal, S, grammar, i=0):
                 if not curr:
                     fail = True
                     break
-                out.addChild(ParseNode("<WORD>", curr))
+                out.add_child(ParseNode(NodeType("<WORD>"), curr))
             else:
                 x = match(element, S, grammar, pos)
                 if not x:
                     fail = True
                     break
-                out.addChild(x[0])
+                out.add_child(x[0])
                 pos = x[1]
         if not fail:
             return out, pos
     return None
 
 
-def parse(S, proc_grammar=None):
+def parse(S: str, proc_grammar: Grammar = None) -> IsMatch:
     if proc_grammar is None:
         proc_grammar = build_proc_grammar(GRAMMAR)
-    return match("GOAL", S, proc_grammar)[0]
+    return match(NodeType("GOAL"), S, proc_grammar)[0]
