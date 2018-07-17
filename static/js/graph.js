@@ -7,7 +7,7 @@ let graph = [];
 
 const RADIUS = 20;
 
-function addNode(val) {
+function addNode(val, x, y) {
     let nodeShape = new fabric.Circle({
         radius: RADIUS,
         stroke: "black",
@@ -23,8 +23,8 @@ function addNode(val) {
     });
 
     let node = new fabric.Group([nodeShape, nodeVal], {
-        left: 150,
-        top: 100,
+        left: x,
+        top: y,
         lockScalingX: true,
         lockScalingY: true,
         lockRotation: true,
@@ -89,7 +89,7 @@ function draw_graph(g) {
     graph = [];
     console.log(g);
     for (let vertex of g["vertices"]) {
-        addNode(vertex["name"]);
+        addNode(vertex["name"], vertex["x"], vertex["y"]);
     }
     for (let edge of g["edges"]) {
         addEdge(edge["head"], edge["tail"], "")
