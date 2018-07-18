@@ -1,11 +1,20 @@
 // create a wrapper around native canvas element (with id="c")
 let canvas = new fabric.Canvas('canvas');
 canvas.selection = false;
-let nodes = [];
-let edges = [];
-let graph = [];
+let nodes = []; // [node canvas objects]
+let edges = []; // [vertex_index -> [edge canvas object, edge label canvas object]]
+let graph = []; // [vertex_index -> [adjacent vertex indices]
+
+let vertex_pos = []; // [{"x" : x, "y" : y}]
+let vertex_vel = []; // [{"x" : x, "y" : y}]
+let edge_list = []; // [[v_index_1, v_index_2]]
 
 const RADIUS = 20;
+
+const LEFT = 50;
+const TOP = 50;
+const RIGHT = 450;
+const BOTTOM = 450;
 
 function addNode(val, x, y) {
     let nodeShape = new fabric.Circle({
@@ -34,6 +43,8 @@ function addNode(val, x, y) {
 
     canvas.add(node);
     nodes.push(node);
+    vertex_pos.push({"x": x, "y": y});
+    vertex_vel.push({"x": 0, "y": 0});
     graph.push([]);
     edges.push([]);
     let i = nodes.length - 1;
@@ -65,6 +76,7 @@ function addEdge(i, j, v) {
     graph[j].push(i);
     edges[i].push([path, label]);
     edges[j].push([path, label]);
+    edge_list.push([i, j]);
 }
 
 function redrawEdges(i) {
@@ -82,11 +94,47 @@ function redrawEdges(i) {
     }
 }
 
+function placeNode(i, x, y) {
+    nodes[i].set({"left": x, "top": y});
+    nodes[i].setCoords();
+    canvas.renderAll();
+    redrawEdges(i);
+    canvas.renderAll();
+}
+
+function positionNodes(now) {
+    console.log(now);
+    let ret = position(vertex_pos, vertex_vel, edge_list);
+    vertex_pos = ret[0];
+    vertex_vel = ret[1];
+    let stop = ret[2];
+
+    let xMin = Math.min(...vertex_pos.map(pos => pos.x));
+    let xMax = Math.max(...vertex_pos.map(pos => pos.x));
+    let yMin = Math.min(...vertex_pos.map(pos => pos.y));
+    let yMax = Math.max(...vertex_pos.map(pos => pos.y));
+
+    console.log(xMin, xMax, yMin, yMax);
+
+    for (let i = 0; i !== nodes.length; ++i) {
+        placeNode(i,
+            (vertex_pos[i].x - xMin) / (xMax - xMin) * (RIGHT - LEFT) + LEFT,
+            (vertex_pos[i].y - yMin) / (yMax - yMin) * (BOTTOM - TOP) + TOP);
+    }
+    canvas.renderAll();
+    if (stop) {
+        return;
+    }
+    requestAnimationFrame(positionNodes)
+}
+
 function draw_graph(g) {
     canvas.clear();
     nodes = [];
     edges = [];
     graph = [];
+    vertex_pos = [];
+    edge_list = [];
     console.log(g);
     for (let vertex of g["vertices"]) {
         addNode(vertex["name"], vertex["x"], vertex["y"]);

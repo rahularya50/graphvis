@@ -19,12 +19,29 @@
                 Please enter graph descriptor.
             </label>
             <textarea class="form-control" rows="5" id="graphdata" name="graphdata">
-4 2
-1 2 0
-2 3 0
-3 4 0
-a1 a2
-b1 b2
+20 21
+5 8
+1 19
+14 19
+12 16
+3 7
+15 19
+5 8
+2 20
+12 13
+2 19
+17 19
+1 4
+15 16
+9 12
+10 20
+8 10
+1 12
+6 20
+5 18
+3 15
+8 11
+
             </textarea>
             <br>
             <label for="graphformat">
@@ -32,13 +49,9 @@ b1 b2
             </label>
             <textarea class="form-control" rows="5" id="graphformat" name="graphformat">
 newgraph
-<cities, VERTICES> plans
-(EDGES = cities - 1)
+VERTICES EDGES
 forall EDGES {
-    <a, ENDPOINT+1> <b, ENDPOINT+1> length
-}
-forall plans {
-    u v
+<ENDPOINT + 1> <ENDPOINT + 1>
 }
             </textarea>
             <br>
@@ -58,5 +71,6 @@ forall plans {
     <script src="/static/js/fabric.min.js"></script>
     <script src="/static/js/graph.js"></script>
     <script src="/static/js/controller.js"></script>
+    <script src="/static/js/position.js"></script>
 </footer>
 </html>

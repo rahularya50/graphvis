@@ -17,12 +17,14 @@ class Force:
 
 D = 200
 K1 = 0.3
-K2 = 10000
+K2 = 1000000
 
 THRESHOLD = 0.05
 
 XHEIGHT = 400
 YHEIGHT = 400
+
+MARGIN = 50
 
 
 def dist(v1: Vertex, v2: Vertex) -> float:
@@ -32,7 +34,7 @@ def dist(v1: Vertex, v2: Vertex) -> float:
 def position(num_vertices: int, edges: List[Tuple[int, int]]) -> List[Vertex]:
     vertices = [Vertex(100 + i ** 2, 100 * i) for i in range(num_vertices)]
 
-    bigMove = True
+    bigMove = False  # True
     while bigMove:
         bigMove = False
         forces = [Force(0, 0) for _ in range(num_vertices)]
@@ -64,7 +66,7 @@ def position(num_vertices: int, edges: List[Tuple[int, int]]) -> List[Vertex]:
     print(minX, minY, maxX, maxY)
 
     for i, vertex in enumerate(vertices):
-        vertices[i] = Vertex(int((vertex.x - minX) / (maxX - minX) * XHEIGHT),
-                             int((vertex.y - minY) / (maxY - minY) * YHEIGHT))
+        vertices[i] = Vertex(int(MARGIN / 2 + (vertex.x - minX) / (maxX - minX) * XHEIGHT),
+                             int(MARGIN / 2 + (vertex.y - minY) / (maxY - minY) * YHEIGHT))
 
     return vertices
