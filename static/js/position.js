@@ -20,7 +20,6 @@ function position(vertex_pos, vertex_vel, edges) {
         let b = edge[1];
         let d = dist(vertex_pos[a], vertex_pos[b]);
         let F = K1 * (d - D);
-        console.log(d);
         forces[a].x += F * (vertex_pos[b].x - vertex_pos[a].x) / d;
         forces[a].y += F * (vertex_pos[b].y - vertex_pos[a].y) / d;
         forces[b].x += F * (vertex_pos[a].x - vertex_pos[b].x) / d;
@@ -51,6 +50,5 @@ function position(vertex_pos, vertex_vel, edges) {
         vertex_pos[i].x += vertex_vel[i].x;
         vertex_pos[i].y += vertex_vel[i].y;
     }
-    console.log(vertex_pos);
     return [vertex_pos, vertex_vel, stop];
 }

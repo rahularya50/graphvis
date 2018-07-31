@@ -103,29 +103,26 @@ function placeNode(i, x, y) {
 }
 
 function positionNodes(now) {
-    console.log(now);
-    let ret = position(vertex_pos, vertex_vel, edge_list);
-    vertex_pos = ret[0];
-    vertex_vel = ret[1];
-    let stop = ret[2];
+    let stop;
+    for (let i = 0; i !== 5; ++i) {
+        [vertex_pos, vertex_vel, stop] = position(vertex_pos, vertex_vel, edge_list);
+    }
 
     let xMin = Math.min(...vertex_pos.map(pos => pos.x));
     let xMax = Math.max(...vertex_pos.map(pos => pos.x));
     let yMin = Math.min(...vertex_pos.map(pos => pos.y));
     let yMax = Math.max(...vertex_pos.map(pos => pos.y));
 
-    console.log(xMin, xMax, yMin, yMax);
-
     for (let i = 0; i !== nodes.length; ++i) {
         placeNode(i,
-            (vertex_pos[i].x - xMin) / (xMax - xMin) * (RIGHT - LEFT) + LEFT,
-            (vertex_pos[i].y - yMin) / (yMax - yMin) * (BOTTOM - TOP) + TOP);
+            (vertex_pos[i].x - xMin) / (xMax - xMin) * (RIGHT - LEFT) + LEFT / 2,
+            (vertex_pos[i].y - yMin) / (yMax - yMin) * (BOTTOM - TOP) + TOP / 2);
     }
     canvas.renderAll();
     if (stop) {
         return;
     }
-    requestAnimationFrame(positionNodes)
+    requestAnimationFrame(positionNodes);
 }
 
 function draw_graph(g) {
@@ -142,4 +139,5 @@ function draw_graph(g) {
     for (let edge of g["edges"]) {
         addEdge(edge["head"], edge["tail"], "")
     }
+    requestAnimationFrame(positionNodes);
 }
