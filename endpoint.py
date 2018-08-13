@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from typing import Dict, Any
+from typing import Dict, Any, List, Tuple
 
 import compile
 import draw_graph
@@ -38,14 +38,34 @@ def get_graph(graph: execute.Graph) -> Dict[str, Any]:
     return out
 
 
+def get_vargraph(root: execute.Root) -> Dict[compile.VarName, List[compile.VarName]]:
+    out = {}
+    for var in root.values:
+        out[var] = root.values[var].ancestors
+    return out
+
+
+def get_varvals(root: execute.Root) -> Dict[compile.VarName, Dict[Tuple[int], int]]:
+    out = {}
+    for var in root.values:
+        out[var] = root.values[var].values
+    return out
+
+
 def get_data(program: str, string: str) -> dict:
     parse_tree = parse.parse(program)
     ast = compile.compile_tree(parse_tree)
     data = execute.Execute(ast, string).get_data()
 
     out = {}
-    graph = get_graph(data.values[execute.GRAPH_NAME].values[tuple()])
 
+    vargraph = get_vargraph(data)
+    out["vargraph"] = vargraph
+
+    varvals = get_varvals(data)
+    out["varvals"] = varvals
+
+    graph = get_graph(data.values[execute.GRAPH_NAME].values[tuple()])
     out["graph"] = graph
 
     return json.dumps(out)

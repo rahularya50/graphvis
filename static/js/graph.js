@@ -132,7 +132,6 @@ function draw_graph(g) {
     graph = [];
     vertex_pos = [];
     edge_list = [];
-    console.log(g);
     for (let vertex of g["vertices"]) {
         addNode(vertex["name"], vertex["x"], vertex["y"]);
     }

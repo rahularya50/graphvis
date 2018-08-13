@@ -78,7 +78,6 @@ class Root:
     values: Dict[compile.VarName, Variable]
 
     def __init__(self) -> None:
-        self.children = set()
         self.values = dict()
 
     def __repr__(self) -> str:
