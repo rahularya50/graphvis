@@ -45,10 +45,26 @@ def get_vargraph(root: execute.Root) -> Dict[compile.VarName, List[compile.VarNa
     return out
 
 
+# I'm so sorry about the variable names I genuinely thought they were understandable
 def get_varvals(root: execute.Root) -> Dict[compile.VarName, Dict[Tuple[int], int]]:
     out = {}
-    for var in root.values:
-        out[var] = root.values[var].values
+    for var_name, var in root.values.items():
+        if isinstance(next(iter(var.values.values())), execute.Graph):
+            continue
+        var: execute.Variable
+        if var_name not in out:
+            out[var_name] = {}
+        for vals, value in var.values.items():
+            prev = None
+            curr = out[var_name]
+            for val in vals:
+                if val not in curr:
+                    curr[val] = {}
+                prev, curr = curr, curr[val]
+            if prev is None:
+                out[var_name] = var.values[tuple()]
+            else:
+                prev[vals[-1]] = value
     return out
 
 
@@ -67,5 +83,7 @@ def get_data(program: str, string: str) -> dict:
 
     graph = get_graph(data.values[execute.GRAPH_NAME].values[tuple()])
     out["graph"] = graph
+
+    print(out)
 
     return json.dumps(out)
